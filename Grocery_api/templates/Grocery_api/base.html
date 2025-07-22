@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Grocery App{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-green-600 p-4 text-white flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <a href="/" class="font-bold text-xl">Grocery App</a>
+            {% if items_by_category %}
+            <div class="relative group">
+                <button class="bg-green-700 px-3 py-1 rounded focus:outline-none flex items-center">
+                    Categories
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div class="absolute left-0 mt-2 w-40 bg-white text-black rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    {% for category in items_by_category %}
+                        <a href="#cat-{{ forloop.counter }}" class="block px-4 py-2 hover:bg-green-100">{{ category.label }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="space-x-4">
+            <a href="/" class="hover:underline">Home</a>
+            {% if user.is_authenticated %}
+                <a href="/cart/" class="hover:underline">Cart</a>
+                <a href="/orders/" class="hover:underline">Orders</a>
+                {% if user.is_superuser %}
+                    <a href="/add-item/" class="hover:underline">Add Item</a>
+                {% endif %}
+                <a href="/logout/" class="hover:underline">Logout</a>
+            {% else %}
+                <a href="/login/" class="hover:underline">Login</a>
+                <a href="/register/" class="hover:underline">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+    <div class="container mx-auto py-8">
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="p-2 rounded bg-yellow-100 text-yellow-800 mb-2">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html> 

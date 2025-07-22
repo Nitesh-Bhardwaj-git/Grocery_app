@@ -1,0 +1,34 @@
+{% extends 'Grocery_api/base.html' %}
+{% block title %}Cart | Grocery App{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Your Cart</h1>
+{% if cart_items %}
+  <div class="bg-white rounded shadow p-6">
+    <table class="w-full">
+      <thead>
+        <tr class="border-b">
+          <th class="py-2 text-left">Item</th>
+          <th class="py-2 text-left">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cart_item in cart_items %}
+        <tr class="border-b">
+          <td class="py-2 flex items-center">
+            <img src="{{ cart_item.item.image_url }}" alt="{{ cart_item.item.name }}" class="w-12 h-12 object-cover rounded mr-2">
+            <span>{{ cart_item.item.name }}</span>
+          </td>
+          <td class="py-2">₹{{ cart_item.item.price }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <form method="post" action="/orders/checkout/" class="mt-6 text-right">
+      {% csrf_token %}
+      <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded">Checkout</button>
+    </form>
+  </div>
+{% else %}
+  <div class="text-gray-500">Your cart is empty.</div>
+{% endif %}
+{% endblock %} 
