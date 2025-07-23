@@ -8,7 +8,7 @@ from .serializers import ItemSerializer, CartSerializer, CartItemSerializer, Ord
 import requests
 from rest_framework.views import APIView
 from rest_framework import serializers
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.csrf import csrf_protect
@@ -19,19 +19,26 @@ IMAGE_API_KEY = 'S5UlCFXWXWthgRO08bQsntE4i84da-jRfEyRJT6F4_o'
 IMAGE_API_URL = 'https://api.unsplash.com/photos/random'
 
 def fetch_image_url(query):
+    IMAGE_API_KEY = 'S5UlCFXWXWthgRO08bQsntE4i84da-jRfEyRJT6F4_o'
+    SEARCH_API_URL = 'https://api.unsplash.com/search/photos'
     params = {
         'query': query,
         'client_id': IMAGE_API_KEY,
         'orientation': 'squarish',
+        'per_page': 1,
     }
     try:
-        resp = requests.get(IMAGE_API_URL, params=params)
+        resp = requests.get(SEARCH_API_URL, params=params, timeout=5)
         if resp.status_code == 200:
             data = resp.json()
-            return data.get('urls', {}).get('small', '')
-    except Exception:
-        pass
-    return ''
+            results = data.get('results', [])
+            if results and 'urls' in results[0] and 'small' in results[0]['urls']:
+                return results[0]['urls']['small']
+        print(f'Unsplash API error or no image found for query: {query}, response: {resp.text}')
+        return 'https://via.placeholder.com/150?text=No+Image'
+    except Exception as e:
+        print(f'Error fetching image for {query}: {e}')
+        return 'https://via.placeholder.com/150?text=No+Image'
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all().order_by('-created_at')
@@ -180,10 +187,38 @@ def add_item(request):
         price = request.POST['price']
         category = request.POST['category']
         unit = request.POST.get('unit', 'pcs')
+        unit_value = request.POST.get('unit_value', 1)
         image_url = fetch_image_url(name)
-        Item.objects.create(name=name, description=description, price=price, category=category, unit=unit, image_url=image_url)
+        Item.objects.create(name=name, description=description, price=price, category=category, unit=unit, unit_value=unit_value, image_url=image_url)
         messages.success(request, 'Item added!')
         return redirect('home')
     categories = Item.CATEGORY_CHOICES
     units = Item.UNIT_CHOICES
     return render(request, 'Grocery_api/add_item.html', {'categories': categories, 'units': units})
+
+@user_passes_test(lambda u: u.is_superuser)
+@csrf_protect
+def edit_item(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    if request.method == 'POST':
+        item.name = request.POST['name']
+        item.description = request.POST['description']
+        item.price = request.POST['price']
+        item.category = request.POST['category']
+        item.unit = request.POST['unit']
+        item.unit_value = request.POST.get('unit_value', 1)
+        item.save()
+        messages.success(request, 'Item updated!')
+        return redirect('home')
+    categories = Item.CATEGORY_CHOICES
+    units = Item.UNIT_CHOICES
+    return render(request, 'Grocery_api/edit_item.html', {'item': item, 'categories': categories, 'units': units})
+
+@user_passes_test(lambda u: u.is_superuser)
+def delete_item(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, 'Item deleted!')
+        return redirect('home')
+    return render(request, 'Grocery_api/delete_item.html', {'item': item})

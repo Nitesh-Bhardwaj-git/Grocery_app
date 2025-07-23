@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     ItemViewSet, CartViewSet, CartItemViewSet, OrderViewSet, UserRegisterView,
-    home, user_login, user_register, user_logout, cart_page, orders_page, add_item
+    home, user_login, user_register, user_logout, cart_page, orders_page, add_item, edit_item, delete_item
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -24,6 +24,8 @@ urlpatterns = [
     path('cart/', cart_page, name='cart'),
     path('orders/', orders_page, name='orders'),
     path('add-item/', add_item, name='add_item'),
+    path('edit-item/<int:item_id>/', edit_item, name='edit_item'),
+    path('delete-item/<int:item_id>/', delete_item, name='delete_item'),
 
     # API endpoints
     path('api/', include(router.urls)),

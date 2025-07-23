@@ -1,0 +1,13 @@
+{% extends 'Grocery_api/base.html' %}
+{% block title %}Delete Item | Grocery App{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6 text-red-700">Delete Item</h1>
+<div class="max-w-lg mx-auto bg-white p-6 rounded shadow text-center">
+    <p class="mb-4">Are you sure you want to delete <span class="font-bold">{{ item.name }}</span>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded">Yes, Delete</button>
+        <a href="/" class="ml-4 text-green-700 underline">Cancel</a>
+    </form>
+</div>
+{% endblock %} 

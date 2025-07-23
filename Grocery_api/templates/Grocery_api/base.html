@@ -11,12 +11,12 @@
         <div class="flex items-center space-x-4">
             <a href="/" class="font-bold text-xl">Grocery App</a>
             {% if items_by_category %}
-            <div class="relative group">
-                <button class="bg-green-700 px-3 py-1 rounded focus:outline-none flex items-center">
+            <div class="relative">
+                <button id="cat-dropdown-btn" type="button" class="bg-green-700 px-3 py-1 rounded focus:outline-none flex items-center">
                     Categories
                     <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
-                <div class="absolute left-0 mt-2 w-40 bg-white text-black rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <div id="cat-dropdown-menu" class="absolute left-0 mt-2 w-40 bg-white text-black rounded shadow-lg opacity-0 pointer-events-none transition-opacity z-10">
                     {% for category in items_by_category %}
                         <a href="#cat-{{ forloop.counter }}" class="block px-4 py-2 hover:bg-green-100">{{ category.label }}</a>
                     {% endfor %}
@@ -49,5 +49,29 @@
         {% endif %}
         {% block content %}{% endblock %}
     </div>
+    <script>
+    // Toggle categories dropdown on click
+    const btn = document.getElementById('cat-dropdown-btn');
+    const menu = document.getElementById('cat-dropdown-menu');
+    if (btn && menu) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (menu.classList.contains('opacity-0')) {
+                menu.classList.remove('opacity-0', 'pointer-events-none');
+                menu.classList.add('opacity-100');
+            } else {
+                menu.classList.add('opacity-0', 'pointer-events-none');
+                menu.classList.remove('opacity-100');
+            }
+        });
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('opacity-0', 'pointer-events-none');
+                menu.classList.remove('opacity-100');
+            }
+        });
+    }
+    </script>
 </body>
 </html> 

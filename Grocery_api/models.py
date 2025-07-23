@@ -18,6 +18,7 @@ class Item(models.Model):
         ('ml', 'Millilitre'),
         ('pcs', 'Pieces'),
         ('pack', 'Pack'),
+        ('dozen', 'Dozen'),
         ('other', 'Other'),
     ]
     name = models.CharField(max_length=100)
@@ -26,6 +27,7 @@ class Item(models.Model):
     image_url = models.URLField(blank=True)
     category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='other')
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='pcs')
+    unit_value = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

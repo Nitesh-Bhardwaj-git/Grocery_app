@@ -1,4 +1,5 @@
 {% extends 'Grocery_api/base.html' %}
+{% load unit_display %}
 {% block title %}Home | Grocery App{% endblock %}
 {% block content %}
 <h1 class="text-3xl font-bold mb-6">Grocery Items</h1>
@@ -13,12 +14,19 @@
           <div class="text-gray-600 mb-2">{{ item.description }}</div>
           <div class="text-green-700 font-semibold mb-2">₹{{ item.price }}</div>
           <div class="text-xs text-gray-400 mb-2">Category: {{ item.get_category_display }}</div>
+          <div class="text-xs text-gray-400 mb-2">Unit: {{ item|unit_display }}</div>
           {% if user.is_authenticated %}
             <form method="post" action="/cart-items/">
               {% csrf_token %}
               <input type="hidden" name="item_id" value="{{ item.id }}">
               <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded">Add to Cart</button>
             </form>
+            {% if user.is_superuser %}
+              <div class="flex space-x-2 mt-2">
+                <a href="/edit-item/{{ item.id }}/" class="bg-yellow-400 text-black px-3 py-1 rounded">Edit</a>
+                <a href="/delete-item/{{ item.id }}/" class="bg-red-600 text-white px-3 py-1 rounded">Delete</a>
+              </div>
+            {% endif %}
           {% else %}
             <a href="/login/" class="text-blue-600 underline">Login to add to cart</a>
           {% endif %}
