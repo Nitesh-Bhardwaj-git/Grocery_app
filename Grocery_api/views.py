@@ -137,13 +137,19 @@ def user_login(request):
 def user_register(request):
     if request.method == 'POST':
         username = request.POST['username']
+        email = request.POST['email']
         password = request.POST['password']
-        if not username or not password:
-            messages.error(request, 'Username and password required')
+        confirm_password = request.POST['confirm_password']
+        if not username or not email or not password or not confirm_password:
+            messages.error(request, 'All fields are required')
+        elif password != confirm_password:
+            messages.error(request, 'Passwords do not match')
         elif User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists')
+        elif User.objects.filter(email=email).exists():
+            messages.error(request, 'Email already exists')
         else:
-            User.objects.create_user(username=username, password=password)
+            User.objects.create_user(username=username, email=email, password=password)
             messages.success(request, 'Registration successful. Please log in.')
             return redirect('login')
     return render(request, 'Grocery_api/register.html')
