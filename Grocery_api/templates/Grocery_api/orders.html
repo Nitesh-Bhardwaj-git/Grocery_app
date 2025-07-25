@@ -2,16 +2,25 @@
 {% block title %}Orders | Grocery App{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-bold mb-6">Your Orders</h1>
-{% if orders %}
+{% if orders and orders|length > 0 %}
   <div class="space-y-6">
     {% for order in orders %}
-      <div class="bg-white rounded shadow p-6">
-        <div class="mb-2 font-semibold">Order #{{ order.id }} | {{ order.created_at|date:'Y-m-d H:i' }}</div>
-        <div class="mb-2">Total: <span class="font-bold">₹{{ order.total_price }}</span></div>
+      <div class="bg-white rounded-xl shadow p-6">
+        <div class="mb-2 font-semibold text-lg flex flex-col md:flex-row md:items-center md:justify-between">
+          <span>Order #{{ order.id }} | {{ order.created_at|date:'Y-m-d H:i' }}</span>
+          <span class="text-green-700 font-bold">Total: ₹{{ order.total_price }}</span>
+        </div>
         <div>
-          <ul class="list-disc ml-6">
-            {% for cart_item in order.items.all %}
-              <li>{{ cart_item.item.name }} (₹{{ cart_item.item.price }})</li>
+          <ul class="divide-y divide-gray-200">
+            {% for order_item in order.items.all %}
+              <li class="flex items-center py-2">
+                <img src="{{ order_item.image_url }}" alt="{{ order_item.name }}" class="w-12 h-12 object-cover rounded mr-3">
+                <div class="flex-1">
+                  <div class="font-semibold">{{ order_item.name }}</div>
+                  <div class="text-xs text-gray-500">x{{ order_item.quantity }}</div>
+                </div>
+                <div class="text-lg font-bold">₹{{ order_item.price }}</div>
+              </li>
             {% endfor %}
           </ul>
         </div>
@@ -19,6 +28,10 @@
     {% endfor %}
   </div>
 {% else %}
-  <div class="text-gray-500">You have no orders yet.</div>
+  <div class="flex flex-col items-center justify-center py-16">
+    <div class="text-6xl mb-4">📦</div>
+    <div class="text-gray-500 text-xl mb-2">You have no orders yet.</div>
+    <a href="/" class="mt-2 bg-green-700 text-white px-6 py-2 rounded font-semibold hover:bg-green-800">Shop now</a>
+  </div>
 {% endif %}
 {% endblock %} 

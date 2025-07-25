@@ -6,38 +6,45 @@
     <title>{% block title %}Grocery App{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-green-600 p-4 text-white flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-            <a href="/" class="font-bold text-xl">Grocery App</a>
-            {% if items_by_category %}
-            <div class="relative">
-                <button id="cat-dropdown-btn" type="button" class="bg-green-700 px-3 py-1 rounded focus:outline-none flex items-center">
-                    Categories
-                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
-                <div id="cat-dropdown-menu" class="absolute left-0 mt-2 w-40 bg-white text-black rounded shadow-lg opacity-0 pointer-events-none transition-opacity z-10">
-                    {% for category in items_by_category %}
-                        <a href="#cat-{{ forloop.counter }}" class="block px-4 py-2 hover:bg-green-100">{{ category.label }}</a>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-green-700 sticky top-0 z-50 shadow text-white">
+      <div class="container mx-auto flex items-center justify-between px-4 py-3">
+        <!-- Logo/Brand -->
+        <div class="flex items-center space-x-3">
+          <a href="/" class="font-extrabold text-2xl tracking-tight flex items-center">
+            <span class="bg-white text-green-700 rounded-full px-2 py-1 mr-2">🛒</span> Grocery App
+          </a>
         </div>
-        <div class="space-x-4">
-            <a href="/" class="hover:underline">Home</a>
-            {% if user.is_authenticated %}
-                <a href="/cart/" class="hover:underline">Cart</a>
-                <a href="/orders/" class="hover:underline">Orders</a>
-                {% if user.is_superuser %}
-                    <a href="/add-item/" class="hover:underline">Add Item</a>
-                {% endif %}
-                <a href="/logout/" class="hover:underline">Logout</a>
-            {% else %}
-                <a href="/login/" class="hover:underline">Login</a>
-                <a href="/register/" class="hover:underline">Register</a>
+        <!-- Desktop Nav -->
+        <div class="hidden md:flex items-center space-x-6">
+          <a href="/" class="hover:underline">Home</a>
+          {% if user.is_authenticated %}
+            <a href="/cart/" class="relative hover:underline">
+              Cart
+              <!-- Cart badge (optional, can be dynamic) -->
+              <span class="absolute -top-2 -right-3 bg-white text-green-700 rounded-full text-xs px-2 py-0.5 font-bold">{% if cart_items %}{{ cart_items|length }}{% endif %}</span>
+            </a>
+            <a href="/wishlist/" class="relative hover:underline">
+              Wishlist
+              <span class="absolute -top-2 -right-3 bg-white text-green-700 rounded-full text-xs px-2 py-0.5 font-bold">{% if wishlist_items %}{{ wishlist_items|length }}{% endif %}</span>
+            </a>
+            <a href="/orders/" class="hover:underline">Orders</a>
+            <a href="/profile/" class="hover:underline">Profile</a>
+            {% if user.is_superuser %}
+              <a href="/add-item/" class="hover:underline">Add Item</a>
             {% endif %}
+            <a href="/logout/" class="hover:underline">Logout</a>
+          {% else %}
+            <a href="/login/" class="hover:underline">Login</a>
+            <a href="/register/" class="hover:underline">Register</a>
+          {% endif %}
         </div>
+        <!-- Mobile Nav Toggle (optional) -->
+        <div class="md:hidden">
+          <!-- Add a hamburger menu here if you want a mobile sidebar -->
+        </div>
+      </div>
     </nav>
     <div class="container mx-auto py-8">
         {% if messages %}
@@ -49,29 +56,6 @@
         {% endif %}
         {% block content %}{% endblock %}
     </div>
-    <script>
-    // Toggle categories dropdown on click
-    const btn = document.getElementById('cat-dropdown-btn');
-    const menu = document.getElementById('cat-dropdown-menu');
-    if (btn && menu) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (menu.classList.contains('opacity-0')) {
-                menu.classList.remove('opacity-0', 'pointer-events-none');
-                menu.classList.add('opacity-100');
-            } else {
-                menu.classList.add('opacity-0', 'pointer-events-none');
-                menu.classList.remove('opacity-100');
-            }
-        });
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!btn.contains(e.target) && !menu.contains(e.target)) {
-                menu.classList.add('opacity-0', 'pointer-events-none');
-                menu.classList.remove('opacity-100');
-            }
-        });
-    }
-    </script>
+    <!-- Optionally add a mobile sidebar script here -->
 </body>
 </html> 

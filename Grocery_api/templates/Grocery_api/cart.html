@@ -2,23 +2,39 @@
 {% block title %}Cart | Grocery App{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-bold mb-6">Your Cart</h1>
-{% if cart_items %}
+{% if cart_items and cart_items|length > 0 %}
   <div class="bg-white rounded shadow p-6">
     <table class="w-full">
-      <thead>
-        <tr class="border-b">
-          <th class="py-2 text-left">Item</th>
-          <th class="py-2 text-left">Price</th>
-        </tr>
-      </thead>
       <tbody>
         {% for cart_item in cart_items %}
         <tr class="border-b">
-          <td class="py-2 flex items-center">
-            <img src="{{ cart_item.item.image_url }}" alt="{{ cart_item.item.name }}" class="w-12 h-12 object-cover rounded mr-2">
-            <span>{{ cart_item.item.name }}</span>
+          <td class="py-4" colspan="2">
+            <div class="flex items-center justify-between">
+              <div class="flex-shrink-0">
+                <img src="{{ cart_item.item.image_url }}" alt="{{ cart_item.item.name }}" class="w-20 h-20 object-cover rounded bg-gray-100" />
+              </div>
+              <div class="flex-1 px-4">
+                <div class="font-bold text-lg">{{ cart_item.item.name }}</div>
+                <div class="text-gray-500 text-sm">{{ cart_item.item.unit_value|floatformat:0 }} {{ cart_item.item.get_unit_display }}</div>
+                <form method="post" action="{% url 'move_to_wishlist' cart_item.id %}" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="text-blue-900 font-semibold underline underline-offset-2 text-sm">Move to wishlist</button>
+                </form>
+              </div>
+              <div class="flex flex-col items-end">
+                <form method="post" action="/cart/" class="flex items-center mb-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="cart_item_id" value="{{ cart_item.id }}">
+                  <button type="submit" name="action" value="decrease" class="bg-green-700 text-white px-3 py-1 rounded-l text-lg font-bold">-</button>
+                  <span class="bg-green-700 text-white px-4 py-1 text-lg font-bold">{{ cart_item.quantity }}</span>
+                  <button type="submit" name="action" value="increase" class="bg-green-700 text-white px-3 py-1 rounded-r text-lg font-bold">+</button>
+                </form>
+                <div class="text-lg font-bold">
+                  ₹{{ cart_item.item.price }}
+                </div>
+              </div>
+            </div>
           </td>
-          <td class="py-2">₹{{ cart_item.item.price }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -29,6 +45,10 @@
     </form>
   </div>
 {% else %}
-  <div class="text-gray-500">Your cart is empty.</div>
+  <div class="flex flex-col items-center justify-center py-16">
+    <div class="text-6xl mb-4">🛒</div>
+    <div class="text-gray-500 text-xl mb-2">Your cart is empty.</div>
+    <a href="/" class="mt-2 bg-green-700 text-white px-6 py-2 rounded font-semibold hover:bg-green-800">Shop now</a>
+  </div>
 {% endif %}
 {% endblock %} 

@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.decorators import action
 from django.contrib.auth.models import User
-from .models import Item, Cart, CartItem, Order
+from .models import Item, Cart, CartItem, Order, OrderItem, Wishlist, WishlistItem
 from .serializers import ItemSerializer, CartSerializer, CartItemSerializer, OrderSerializer
 import requests
 from rest_framework.views import APIView
@@ -13,6 +13,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.csrf import csrf_protect
 from django.contrib import messages
+from django.db.models import Q
 
 # API key for image fetch
 IMAGE_API_KEY = 'S5UlCFXWXWthgRO08bQsntE4i84da-jRfEyRJT6F4_o'
@@ -122,8 +123,14 @@ class UserRegisterView(APIView):
 def home(request):
     categories = Item.CATEGORY_CHOICES
     items_by_category = []
+    search_query = request.GET.get('search', '').strip()
     for value, label in categories:
-        items = Item.objects.filter(category=value)
+        if search_query:
+            items = Item.objects.filter(category=value).filter(
+                Q(name__icontains=search_query) | Q(description__icontains=search_query)
+            )
+        else:
+            items = Item.objects.filter(category=value)
         items_by_category.append({'label': label, 'items': items})
     return render(request, 'Grocery_api/home.html', {'items_by_category': items_by_category})
 
@@ -169,6 +176,39 @@ def user_logout(request):
 @login_required
 def cart_page(request):
     cart, _ = Cart.objects.get_or_create(user=request.user)
+    if request.method == 'POST':
+        cart_item_id = request.POST.get('cart_item_id')
+        action = request.POST.get('action')
+        if cart_item_id and action:
+            cart_item = get_object_or_404(CartItem, id=cart_item_id, cart=cart)
+            if action == 'increase':
+                cart_item.quantity += 1
+                cart_item.save()
+                messages.success(request, f"Increased quantity of {cart_item.item.name}.")
+            elif action == 'decrease':
+                if cart_item.quantity > 1:
+                    cart_item.quantity -= 1
+                    cart_item.save()
+                    messages.success(request, f"Decreased quantity of {cart_item.item.name}.")
+                else:
+                    cart_item.delete()
+                    messages.success(request, f"Removed {cart_item.item.name} from cart.")
+            return redirect('cart')
+        remove_cart_item_id = request.POST.get('remove_cart_item_id')
+        if remove_cart_item_id:
+            cart_item = get_object_or_404(CartItem, id=remove_cart_item_id, cart=cart)
+            cart_item.delete()
+            messages.success(request, f"Removed {cart_item.item.name} from cart.")
+            return redirect('cart')
+        item_id = request.POST.get('item_id')
+        if item_id:
+            item = get_object_or_404(Item, id=item_id)
+            cart_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
+            if not created:
+                cart_item.quantity += 1
+                cart_item.save()
+            messages.success(request, f"{item.name} added to cart!")
+        return redirect('cart')
     items = CartItem.objects.filter(cart=cart)
     return render(request, 'Grocery_api/cart.html', {'cart_items': items})
 
@@ -176,6 +216,30 @@ def cart_page(request):
 def orders_page(request):
     orders = Order.objects.filter(user=request.user)
     return render(request, 'Grocery_api/orders.html', {'orders': orders})
+
+@login_required
+@csrf_protect
+def checkout(request):
+    if request.method == 'POST':
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart_items = CartItem.objects.filter(cart=cart)
+        if not cart_items.exists():
+            messages.error(request, 'Cart is empty.')
+            return redirect('cart')
+        total = sum([item.item.price * item.quantity for item in cart_items])
+        order = Order.objects.create(user=request.user, total_price=total)
+        for cart_item in cart_items:
+            OrderItem.objects.create(
+                order=order,
+                name=cart_item.item.name,
+                image_url=cart_item.item.image_url,
+                quantity=cart_item.quantity,
+                price=cart_item.item.price
+            )
+        cart_items.delete()  # Clear cart
+        messages.success(request, 'Order placed successfully!')
+        return redirect('orders')
+    return redirect('cart')
 
 @user_passes_test(lambda u: u.is_superuser)
 @csrf_protect
@@ -222,3 +286,79 @@ def delete_item(request, item_id):
         messages.success(request, 'Item deleted!')
         return redirect('home')
     return render(request, 'Grocery_api/delete_item.html', {'item': item})
+
+@login_required
+def move_to_wishlist(request, cart_item_id):
+    cart_item = get_object_or_404(CartItem, id=cart_item_id, cart__user=request.user)
+    wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+    wishlist_item, created = WishlistItem.objects.get_or_create(wishlist=wishlist, item=cart_item.item)
+    if not created:
+        wishlist_item.quantity += cart_item.quantity
+        wishlist_item.save()
+    else:
+        wishlist_item.quantity = cart_item.quantity
+        wishlist_item.save()
+    cart_item.delete()
+    messages.success(request, f"Moved {wishlist_item.item.name} to wishlist.")
+    return redirect('cart')
+
+@login_required
+def wishlist_page(request):
+    wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+    items = WishlistItem.objects.filter(wishlist=wishlist)
+    return render(request, 'Grocery_api/wishlist.html', {'wishlist_items': items})
+
+@login_required
+def move_to_cart(request, wishlist_item_id):
+    wishlist_item = get_object_or_404(WishlistItem, id=wishlist_item_id, wishlist__user=request.user)
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, item=wishlist_item.item)
+    if not created:
+        cart_item.quantity += wishlist_item.quantity
+        cart_item.save()
+    else:
+        cart_item.quantity = wishlist_item.quantity
+        cart_item.save()
+    wishlist_item.delete()
+    messages.success(request, f"Moved {cart_item.item.name} to cart.")
+    return redirect('wishlist')
+
+@login_required
+def product_detail(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    return render(request, 'Grocery_api/product_detail.html', {'item': item})
+
+@login_required
+def profile_page(request):
+    user = request.user
+    return render(request, 'Grocery_api/profile.html', {'user': user})
+
+@login_required
+def add_to_wishlist(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+    wishlist_item, created = WishlistItem.objects.get_or_create(wishlist=wishlist, item=item)
+    if not created:
+        wishlist_item.quantity += 1
+        wishlist_item.save()
+    else:
+        wishlist_item.quantity = 1
+        wishlist_item.save()
+    messages.success(request, f"Added {item.name} to wishlist.")
+    return redirect('home')
+
+def global_counts(request):
+    cart_items = []
+    wishlist_items = []
+    if request.user.is_authenticated:
+        try:
+            cart, _ = Cart.objects.get_or_create(user=request.user)
+            cart_items = CartItem.objects.filter(cart=cart)
+        except:
+            pass
+        try:
+            wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+            wishlist_items = WishlistItem.objects.filter(wishlist=wishlist)
+        except:
+            pass
+    return {'cart_items': cart_items, 'wishlist_items': wishlist_items}
