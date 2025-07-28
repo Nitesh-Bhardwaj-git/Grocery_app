@@ -130,7 +130,7 @@ def home(request):
                 Q(name__icontains=search_query) | Q(description__icontains=search_query)
             )
         else:
-            items = Item.objects.filter(category=value)
+        items = Item.objects.filter(category=value)
         items_by_category.append({'label': label, 'items': items})
     return render(request, 'Grocery_api/home.html', {'items_by_category': items_by_category})
 
