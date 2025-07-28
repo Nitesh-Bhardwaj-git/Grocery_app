@@ -72,11 +72,36 @@ class CartItemViewSet(viewsets.ModelViewSet):
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return CartItem.objects.filter(cart=cart)
 
-    def perform_create(self, serializer):
-        cart, _ = Cart.objects.get_or_create(user=self.request.user)
-        # Only add if not already in cart
-        if not CartItem.objects.filter(cart=cart, item=serializer.validated_data['item']).exists():
-            serializer.save(cart=cart)
+    def create(self, request, *args, **kwargs):
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        item = request.data.get('item_id')
+        try:
+            quantity = max(1, int(request.data.get('quantity', 1)))
+        except (ValueError, TypeError):
+            quantity = 1
+        
+        if not item:
+            return Response({'error': 'item_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            item_obj = Item.objects.get(id=item)
+        except Item.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if item already exists in cart
+        cart_item, created = CartItem.objects.get_or_create(
+            cart=cart, 
+            item=item_obj,
+            defaults={'quantity': quantity}
+        )
+        
+        if not created:
+            # If item already exists, update quantity
+            cart_item.quantity = max(1, cart_item.quantity + quantity)
+            cart_item.save()
+        
+        serializer = self.get_serializer(cart_item)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
@@ -93,8 +118,17 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST)
         total = sum([item.item.price * item.quantity for item in cart_items])
         order = Order.objects.create(user=request.user, total_price=total)
-        order.items.set(cart_items)
-        order.save()
+        
+        # Create OrderItems from CartItems
+        for cart_item in cart_items:
+            OrderItem.objects.create(
+                order=order,
+                name=cart_item.item.name,
+                image_url=cart_item.item.image_url,
+                quantity=cart_item.quantity,
+                price=cart_item.item.price
+            )
+        
         cart_items.delete()  # Clear cart
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
@@ -130,7 +164,7 @@ def home(request):
                 Q(name__icontains=search_query) | Q(description__icontains=search_query)
             )
         else:
-        items = Item.objects.filter(category=value)
+            items = Item.objects.filter(category=value)
         items_by_category.append({'label': label, 'items': items})
     return render(request, 'Grocery_api/home.html', {'items_by_category': items_by_category})
 
