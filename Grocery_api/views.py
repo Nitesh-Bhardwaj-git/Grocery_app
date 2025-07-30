@@ -21,47 +21,7 @@ import os
 IMAGE_API_KEY = 'S5UlCFXWXWthgRO08bQsntE4i84da-jRfEyRJT6F4_o'
 IMAGE_API_URL = 'https://api.unsplash.com/photos/random'
 
-def create_superuser_view(request):
-    """
-    View to create a superuser during deployment
-    This should be called once during deployment setup
-    """
-    # Get credentials from environment variables
-    username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
-    email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
-    password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
-    
-    if not all([username, email, password]):
-        return JsonResponse({
-            'success': False,
-            'error': 'Missing environment variables: DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, DJANGO_SUPERUSER_PASSWORD'
-        }, status=400)
-    
-    try:
-        # Check if superuser already exists
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({
-                'success': True,
-                'message': f'Superuser "{username}" already exists'
-            })
-        
-        # Create superuser
-        User.objects.create_superuser(
-            username=username,
-            email=email,
-            password=password
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Superuser "{username}" created successfully'
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'Error creating superuser: {str(e)}'
-        }, status=500)
+
 
 def fetch_image_url(query):
     IMAGE_API_KEY = 'S5UlCFXWXWthgRO08bQsntE4i84da-jRfEyRJT6F4_o'
