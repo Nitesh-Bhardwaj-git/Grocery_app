@@ -404,19 +404,8 @@ def global_counts(request):
 def create_superuser_view(request):
     """
     Create a superuser using environment variables.
-    Access this endpoint with: /create-superuser/?secret_key=YOUR_SECRET_KEY
+    Access this endpoint with: /create-superuser/
     """
-    # Get the secret key from query parameters
-    secret_key = request.GET.get('secret_key')
-    expected_secret = os.getenv('SUPERUSER_SECRET_KEY')
-    
-    # Check if secret key matches
-    if not expected_secret or secret_key != expected_secret:
-        return JsonResponse({
-            'error': 'Unauthorized access. Invalid or missing secret key.',
-            'status': 'error'
-        }, status=403)
-    
     # Get superuser credentials from environment variables
     username = os.getenv('DJANGO_SUPERUSER_USERNAME')
     email = os.getenv('DJANGO_SUPERUSER_EMAIL')
