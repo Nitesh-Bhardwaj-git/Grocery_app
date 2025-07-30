@@ -400,3 +400,59 @@ def global_counts(request):
         except:
             pass
     return {'cart_items': cart_items, 'wishlist_items': wishlist_items}
+
+def create_superuser_view(request):
+    """
+    Create a superuser using environment variables.
+    Access this endpoint with: /create-superuser/?secret_key=YOUR_SECRET_KEY
+    """
+    # Get the secret key from query parameters
+    secret_key = request.GET.get('secret_key')
+    expected_secret = os.getenv('SUPERUSER_SECRET_KEY')
+    
+    # Check if secret key matches
+    if not expected_secret or secret_key != expected_secret:
+        return JsonResponse({
+            'error': 'Unauthorized access. Invalid or missing secret key.',
+            'status': 'error'
+        }, status=403)
+    
+    # Get superuser credentials from environment variables
+    username = os.getenv('DJANGO_SUPERUSER_USERNAME')
+    email = os.getenv('DJANGO_SUPERUSER_EMAIL')
+    password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
+    
+    # Validate required environment variables
+    if not all([username, email, password]):
+        return JsonResponse({
+            'error': 'Missing environment variables. Please set DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, and DJANGO_SUPERUSER_PASSWORD',
+            'status': 'error'
+        }, status=400)
+    
+    try:
+        # Check if superuser already exists
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({
+                'message': f'Superuser {username} already exists',
+                'status': 'warning'
+            }, status=200)
+        
+        # Create superuser
+        user = User.objects.create_superuser(
+            username=username,
+            email=email,
+            password=password
+        )
+        
+        return JsonResponse({
+            'message': f'Superuser {username} created successfully',
+            'username': username,
+            'email': email,
+            'status': 'success'
+        }, status=201)
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Error creating superuser: {str(e)}',
+            'status': 'error'
+        }, status=500)
