@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     ItemViewSet, CartViewSet, CartItemViewSet, OrderViewSet, UserRegisterView,
-    home, user_login, user_register, user_logout, cart_page, orders_page, add_item, edit_item, delete_item, checkout, move_to_wishlist, wishlist_page, move_to_cart, product_detail, profile_page, add_to_wishlist, create_superuser_view
+    home, user_login, user_register, user_logout, cart_page, orders_page, add_item, edit_item, delete_item, checkout, move_to_wishlist, wishlist_page, move_to_cart, product_detail, profile_page, add_to_wishlist
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -33,7 +33,7 @@ urlpatterns = [
     path('wishlist/add/<int:item_id>/', add_to_wishlist, name='add_to_wishlist'),
     path('item/<int:item_id>/', product_detail, name='product_detail'),
     path('profile/', profile_page, name='profile'),
-    path('create-superuser/', create_superuser_view, name='create_superuser'),
+    # path('create-superuser/', create_superuser_view, name='create_superuser'),  # REMOVED FOR SECURITY
 
     # API endpoints
     path('api/', include(router.urls)),
