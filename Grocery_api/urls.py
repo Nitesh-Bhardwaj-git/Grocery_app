@@ -33,7 +33,6 @@ urlpatterns = [
     path('wishlist/add/<int:item_id>/', add_to_wishlist, name='add_to_wishlist'),
     path('item/<int:item_id>/', product_detail, name='product_detail'),
     path('profile/', profile_page, name='profile'),
-    path('create-superuser/', create_superuser_view, name='create_superuser'),
 
     # API endpoints
     path('api/', include(router.urls)),
