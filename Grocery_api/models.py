@@ -24,7 +24,7 @@ class Item(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    image_url = models.URLField(blank=True)
+    image_url = models.URLField(max_length=500, blank=True)
     category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='other')
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='pcs')
     unit_value = models.DecimalField(max_digits=10, decimal_places=2, default=1)
@@ -58,7 +58,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     name = models.CharField(max_length=100)
-    image_url = models.URLField(blank=True)
+    image_url = models.URLField(max_length=500, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 

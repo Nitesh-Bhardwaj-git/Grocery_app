@@ -59,6 +59,11 @@ A modern, full-featured grocery shopping application built with Django and Djang
    ```env
    SECRET_KEY=your-secret-key-here
    DATABASE_URL=postgresql://username:password@host:port/database
+   # Optional: control Django debug
+   DEBUG=True
+   # Unsplash API key for product images
+   IMAGE_API_KEY=your-unsplash-access-key
+   # Optional: auto-create superuser (used by `python manage.py createsu`)
    DJANGO_SUPERUSER_USERNAME=admin
    DJANGO_SUPERUSER_EMAIL=admin@example.com
    DJANGO_SUPERUSER_PASSWORD=your-secure-password
