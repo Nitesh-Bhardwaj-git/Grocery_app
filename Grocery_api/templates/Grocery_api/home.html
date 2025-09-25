@@ -49,6 +49,16 @@
                 <input type="hidden" name="item_id" value="{{ item.id }}">
                 <button type="submit" class="bg-green-700 text-white px-3 py-1 rounded font-semibold hover:bg-green-800">Add to Cart</button>
               </form>
+              {% if not user.is_superuser %}
+                <form method="post" action="{% url 'add_to_wishlist' item.id %}" class="wishlist-form">
+                  {% csrf_token %}
+                  <button type="submit" title="Add to wishlist" class="wishlist-btn px-3 py-1 rounded border border-pink-500 hover:bg-pink-50 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="heart-icon w-5 h-5 transition-colors {% if item.id in user_wishlist_items %}text-red-600{% else %}text-white{% endif %}">
+                      <path d="M11.645 20.91l-.007-.003-.024-.012a15.247 15.247 0 01-.383-.204 25.18 25.18 0 01-4.244-2.832C4.688 15.586 2.25 13.052 2.25 9.75 2.25 7.264 4.235 5.25 6.75 5.25c1.6 0 2.882.645 3.75 1.673.868-1.028 2.15-1.673 3.75-1.673 2.515 0 4.5 2.014 4.5 4.5 0 3.302-2.438 5.836-4.737 7.909a25.175 25.175 0 01-4.244 2.832 15.247 15.247 0 01-.383.204l-.024.012-.007.003a.75.75 0 01-.636 0z"/>
+                    </svg>
+                  </button>
+                </form>
+              {% endif %}
               {% if user.is_superuser %}
                 <a href="/edit-item/{{ item.id }}/" class="bg-blue-200 text-blue-900 px-3 py-1 rounded font-semibold hover:bg-blue-300">Edit</a>
                 <a href="/delete-item/{{ item.id }}/" class="bg-red-600 text-white px-3 py-1 rounded font-semibold hover:bg-red-700">Delete</a>
@@ -65,3 +75,49 @@
   </div>
 {% endfor %}
 {% endblock %} 
+<script>
+  (function() {
+    function getCsrfToken(form) {
+      var input = form.querySelector('input[name="csrfmiddlewaretoken"]');
+      return input ? input.value : '';
+    }
+
+    function activateHeart(btn) {
+      var icon = btn.querySelector('.heart-icon');
+      if (icon) { icon.classList.add('text-red-600'); icon.classList.remove('text-white'); }
+    }
+
+    function deactivateHeart(btn) {
+      var icon = btn.querySelector('.heart-icon');
+      if (icon) { icon.classList.remove('text-red-600'); icon.classList.add('text-white'); }
+    }
+
+    document.querySelectorAll('.wishlist-form').forEach(function(form) {
+      var btn = form.querySelector('.wishlist-btn');
+      if (!btn) return;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        activateHeart(btn);
+        fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCsrfToken(form)
+          },
+          body: new URLSearchParams(new FormData(form))
+        }).then(function(res) {
+          if (!res.ok) { throw new Error('Network response was not ok'); }
+          return res.json();
+        }).then(function(data) {
+          if (data && data.status === 'added') {
+            activateHeart(btn);
+          } else if (data && data.status === 'removed') {
+            deactivateHeart(btn);
+          }
+        }).catch(function() {
+          deactivateHeart(btn);
+        });
+      });
+    });
+  })();
+</script>

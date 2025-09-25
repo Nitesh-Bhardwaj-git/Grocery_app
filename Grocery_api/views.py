@@ -162,6 +162,16 @@ def home(request):
     categories = Item.CATEGORY_CHOICES
     items_by_category = []
     search_query = request.GET.get('search', '').strip()
+    
+    # Get user's wishlist items if authenticated
+    user_wishlist_items = set()
+    if request.user.is_authenticated:
+        try:
+            wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+            user_wishlist_items = set(WishlistItem.objects.filter(wishlist=wishlist).values_list('item_id', flat=True))
+        except:
+            pass
+    
     for value, label in categories:
         if search_query:
             items = Item.objects.filter(category=value).filter(
@@ -170,7 +180,7 @@ def home(request):
         else:
             items = Item.objects.filter(category=value)
         items_by_category.append({'label': label, 'items': items})
-    return render(request, 'Grocery_api/home.html', {'items_by_category': items_by_category})
+    return render(request, 'Grocery_api/home.html', {'items_by_category': items_by_category, 'user_wishlist_items': user_wishlist_items})
 
 @csrf_protect
 def user_login(request):
@@ -364,7 +374,17 @@ def move_to_cart(request, wishlist_item_id):
 @login_required
 def product_detail(request, item_id):
     item = get_object_or_404(Item, id=item_id)
-    return render(request, 'Grocery_api/product_detail.html', {'item': item})
+    
+    # Check if item is in user's wishlist
+    in_wishlist = False
+    if request.user.is_authenticated:
+        try:
+            wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+            in_wishlist = WishlistItem.objects.filter(wishlist=wishlist, item=item).exists()
+        except:
+            pass
+    
+    return render(request, 'Grocery_api/product_detail.html', {'item': item, 'in_wishlist': in_wishlist})
 
 @login_required
 def profile_page(request):
@@ -375,14 +395,20 @@ def profile_page(request):
 def add_to_wishlist(request, item_id):
     item = get_object_or_404(Item, id=item_id)
     wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
-    wishlist_item, created = WishlistItem.objects.get_or_create(wishlist=wishlist, item=item)
-    if not created:
-        wishlist_item.quantity += 1
-        wishlist_item.save()
-    else:
-        wishlist_item.quantity = 1
-        wishlist_item.save()
-    messages.success(request, f"Added {item.name} to wishlist.")
+    try:
+        wishlist_item = WishlistItem.objects.get(wishlist=wishlist, item=item)
+        wishlist_item.delete()
+        action = 'removed'
+        msg = f"Removed {item.name} from wishlist."
+    except WishlistItem.DoesNotExist:
+        wishlist_item = WishlistItem.objects.create(wishlist=wishlist, item=item, quantity=1)
+        action = 'added'
+        msg = f"Added {item.name} to wishlist."
+
+    # Return JSON for AJAX requests, otherwise redirect with a message
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': action})
+    messages.success(request, msg)
     return redirect('home')
 
 def global_counts(request):
